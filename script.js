@@ -15,6 +15,7 @@ function createHabbo(name = `Usuario ${habboIdCounter}`) {
     interval: null,
     startTime: null,
     endTime: null,
+    targetTimestamp: null,
   };
 
   habbos.push(habbo);
@@ -39,9 +40,9 @@ function renderHabbo(h) {
   const rankSelector = document.createElement("select");
   rankSelector.className = "rank-selector";
   const ranks = ['Oficinista', 'Oficinista C', 'Oficinista B', 'Oficinista A', 'Finalizado'];
-  
+
   ranks.forEach((rank) => {
-    if (rank !== 'Finalizado') {  // No agregamos 'Finalizado' al select
+    if (rank !== 'Finalizado') {
       const option = document.createElement("option");
       option.value = rank;
       option.textContent = rank;
@@ -54,7 +55,7 @@ function renderHabbo(h) {
   rankSelector.addEventListener("change", (e) => {
     if (h.rank !== 'Finalizado') {
       h.rank = e.target.value;
-      updateRank(h, box, rankSelector); 
+      updateRank(h, box, rankSelector);
     }
   });
 
@@ -74,20 +75,31 @@ function renderHabbo(h) {
         const currentTime = new Date();
         h.startTime = currentTime.toLocaleTimeString();
         box.querySelector(".start-time").textContent = `Hora inicio: ${h.startTime}`;
-        box.querySelector(".start-time").style.display = "inline"; 
+        box.querySelector(".start-time").style.display = "inline";
       }
 
+      const totalTimeInSeconds = h.minutes * 60 + h.seconds;
+      const now = Date.now();
+      h.targetTimestamp = now + totalTimeInSeconds * 1000;
+
       h.interval = setInterval(() => {
-        if (h.minutes === 0 && h.seconds === 0) {
+        const current = Date.now();
+        const remaining = Math.max(0, Math.floor((h.targetTimestamp - current) / 1000));
+
+        h.minutes = Math.floor(remaining / 60);
+        h.seconds = remaining % 60;
+        updateTimerDisplay(h, timer);
+
+        if (remaining <= 0) {
           clearInterval(h.interval);
           h.interval = null;
           const currentEndTime = new Date();
           h.endTime = currentEndTime.toLocaleTimeString();
           box.querySelector(".end-time").textContent = `Hora finalizada: ${h.endTime}`;
-          box.querySelector(".end-time").style.display = "inline"; 
-          
+          box.querySelector(".end-time").style.display = "inline";
+
           switchRank(h);
-          
+
           const existingMission = box.querySelector(".mission");
           if (existingMission) {
             existingMission.remove();
@@ -95,32 +107,17 @@ function renderHabbo(h) {
 
           const missionDisplay = document.createElement("div");
           missionDisplay.className = "mission";
-          if (h.rank === 'Finalizado') {
-            missionDisplay.textContent = 'Finalizado';
-          } else {
-            missionDisplay.textContent = `Misión: [FBI] ${h.rank} -HKG`;
-          }
-          box.appendChild(missionDisplay); 
+          missionDisplay.textContent = h.rank === 'Finalizado'
+            ? 'Finalizado'
+            : `Misión: [FBI] ${h.rank} -HKG`;
+          box.appendChild(missionDisplay);
 
           beepSound.play();
-          
           box.classList.add("blink");
-
           setTimeout(() => {
             box.classList.remove("blink");
           }, 10000);
-
-          return;
         }
-
-        if (h.seconds === 0) {
-          h.minutes--;
-          h.seconds = 59;
-        } else {
-          h.seconds--;
-        }
-
-        updateTimerDisplay(h, timer);
       }, 1000);
     }
   });
@@ -128,8 +125,15 @@ function renderHabbo(h) {
   const pauseBtn = document.createElement("button");
   pauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
   pauseBtn.addEventListener("click", () => {
-    clearInterval(h.interval);
-    h.interval = null;
+    if (h.interval) {
+      clearInterval(h.interval);
+      h.interval = null;
+
+      // actualizar tiempo restante basado en targetTimestamp
+      const remaining = Math.max(0, Math.floor((h.targetTimestamp - Date.now()) / 1000));
+      h.minutes = Math.floor(remaining / 60);
+      h.seconds = remaining % 60;
+    }
   });
 
   const resetBtn = document.createElement("button");
@@ -141,10 +145,11 @@ function renderHabbo(h) {
     h.seconds = 0;
     h.startTime = null;
     h.endTime = null;
+    h.targetTimestamp = null;
     box.querySelector(".start-time").textContent = "Hora inicio: ";
     box.querySelector(".end-time").textContent = "Hora finalizada: ";
-    box.querySelector(".start-time").style.display = "none";  
-    box.querySelector(".end-time").style.display = "none"; 
+    box.querySelector(".start-time").style.display = "none";
+    box.querySelector(".end-time").style.display = "none";
     box.classList.remove("blink");
     updateTimerDisplay(h, timer);
 
@@ -156,7 +161,7 @@ function renderHabbo(h) {
     const missionDisplay = document.createElement("div");
     missionDisplay.className = "mission";
     missionDisplay.textContent = `Misión: [FBI] ${h.rank} -HKG`;
-    box.appendChild(missionDisplay); 
+    box.appendChild(missionDisplay);
   });
 
   const deleteBtn = document.createElement("button");
@@ -175,16 +180,16 @@ function renderHabbo(h) {
 
   const timeDisplay = document.createElement("div");
   timeDisplay.className = "time-display";
-  
+
   const startTimeDisplay = document.createElement("span");
   startTimeDisplay.className = "start-time";
   startTimeDisplay.textContent = "Hora inicio: ";
-  startTimeDisplay.style.display = "none"; 
+  startTimeDisplay.style.display = "none";
 
   const endTimeDisplay = document.createElement("span");
   endTimeDisplay.className = "end-time";
   endTimeDisplay.textContent = "Hora finalizada:";
-  endTimeDisplay.style.display = "none"; 
+  endTimeDisplay.style.display = "none";
 
   timeDisplay.appendChild(startTimeDisplay);
   timeDisplay.appendChild(endTimeDisplay);
@@ -221,7 +226,7 @@ function switchRank(habbo) {
 
     const rankSelector = habboBox.querySelector(".rank-selector");
     rankSelector.disabled = true;
-    rankSelector.value = habbo.rank;  
+    rankSelector.value = habbo.rank;
   }
 }
 

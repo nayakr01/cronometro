@@ -5,7 +5,7 @@
   --color-secondary: #00BFD8;    
   --color-font: #F2F2F2;         
   --color-shadow: rgb(38, 202, 223);      
-  --color-success: #60d0df;     
+  --color-success: #76bdc7;     
   --color-btn-active: #60d0df;   
 }
 
@@ -177,4 +177,29 @@ h1 {
   background-color: #222;
   color: white;
   border: 1px solid #555;
+}
+
+.controls button:hover {
+  transform: scale(1.1);
+  color: var(--color-success);
+  text-shadow: 0 0 8px var(--color-success);
+}
+
+.controls button:active {
+  animation: clickFeedback 0.2s ease-in-out;
+}
+
+@keyframes clickFeedback {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 1px var(--color-success);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 10px var(--color-success);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 1px var(--color-success);
+  }
 }
